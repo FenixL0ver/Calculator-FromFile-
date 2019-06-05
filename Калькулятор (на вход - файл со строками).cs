@@ -1,22 +1,32 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using System.IO;
 
 namespace ConsoleApp4
 {
     class Program
     {
-        static string FromInFixToPostfix (string expression)
+        /// <summary>
+        /// переводит из инфиксной записи в постфиксную
+        /// </summary>
+        /// <param name="FromInFixToPostfix"></param>
+        /// <returns></returns>
+        static string FromInFixToPostfix (string expression, Dictionary<string,int> variables)
         {
-            var ms = Regex.Matches(expression, @"\d+|[()+-/*]");
+            var ms = Regex.Matches(expression, @"\w+|\d+|[()+-/*]");
             Stack<char> st = new Stack<char>();
             List<string> res = new List<string>();
             int Flag = 0;
             foreach (Match m in ms)
             {
+                if (variables.ContainsKey(m.Value))
+                {
+                    res.Add(variables[m.Value].ToString() + " ");
+                }
                 if (int.TryParse(m.Value,out int a))
                 {
                     res.Add(a.ToString() + " ");
@@ -152,6 +162,11 @@ namespace ConsoleApp4
             return stringres;
         }
 
+        /// <summary>
+        /// Вычисляет значение выражения, записанного в польской инверсной записи
+        /// </summary>
+        /// <param name="CountExpressionInPOLIZ"></param>
+        /// <returns></returns>
         static void CountExpressionInPOLIZ(string expression)
         {
             var st = new Stack<int>();
@@ -208,12 +223,33 @@ namespace ConsoleApp4
             }
         }
 
+        /// <summary>
+        /// вычисляет значения выражения из файла (возможно использование переменных
+        /// </summary>
+        /// <param name="CountExpressionFromFile"></param>
+        static void CountExpressionFromFile(string path = "test.txt")
+        {
+            using (StreamReader sr = new StreamReader(path, Encoding.Default))
+            {
+                var dic = new Dictionary<string, int>();
+                string text = sr.ReadToEnd();
+                var variables = Regex.Matches(text, @"(\w+)=(\d+)",RegexOptions.IgnoreCase);
+                foreach (Match m in variables)
+                {
+                    dic.Add(m.Groups[1].Value, int.Parse(m.Groups[2].Value));
+                }
+                var textsequence = File.ReadLines(path);
+                textsequence = textsequence.Where(x => x.Contains("EVAL"));
+                foreach (var x in textsequence)
+                {
+                    Console.WriteLine(x);
+                    CountExpressionInPOLIZ(FromInFixToPostfix(x,dic));
+                }
+            }
+        }
         static void Main(string[] args)
         {
-            Console.WriteLine("Введите выражение:");
-            var translated = FromInFixToPostfix(Console.ReadLine());
-            Console.WriteLine(translated);
-            CountExpressionInPOLIZ(translated); 
+            CountExpressionFromFile();
             Console.ReadLine();
         }
     }
